@@ -2,59 +2,48 @@ import streamlit as st
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-# Judul Aplikasi
-st.title("Aplikasi Interaktif: Turunan Parsial dan Visualisasi 3D")
+st.title("Aplikasi Turunan Parsial")
 
-# Inisialisasi simbol
-z, y = sp.symbols('z y')
-
-# Input fungsi dan titik evaluasi
-func_input = st.text_input("Masukkan fungsi f(z, y):", "0.5*z*2 + 0.3*y*2 + 3*z*y")
-point_z = st.number_input("Nilai z (misalnya 20):", value=20)
-point_y = st.number_input("Nilai y (misalnya 5):", value=5)
+x, y = sp.symbols('x y')
+fungsi_str = st.text_input("Masukkan fungsi f(x, y):", "x*2 * y + y*3")
 
 try:
-    # Interpretasi fungsi
-    f = sp.sympify(func_input)
+    f = sp.sympify(fungsi_str)
+    fx = sp.diff(f, x)
+    fy = sp.diff(f, y)
 
-    # Hitung turunan parsial
-    f_z = sp.diff(f, z)
-    f_y = sp.diff(f, y)
+    st.latex(f"f(x, y) = {sp.latex(f)}")
+    st.latex(f"\\frac{{\\partial f}}{{\\partial x}} = {sp.latex(fx)}")
+    st.latex(f"\\frac{{\\partial f}}{{\\partial y}} = {sp.latex(fy)}")
 
-    # Evaluasi fungsi dan turunannya
-    f_val = f.subs({z: point_z, y: point_y})
-    fz_val = f_z.subs({z: point_z, y: point_y})
-    fy_val = f_y.subs({z: point_z, y: point_y})
+    x0 = st.number_input("Nilai x₀:", value=1.0)
+    y0 = st.number_input("Nilai y₀:", value=2.0)
 
-    # Tampilkan hasil analitik
-    st.subheader("Hasil Turunan Parsial dan Evaluasi Titik")
-    st.latex(f"f(z, y) = {sp.latex(f)}")
-    st.latex(f"\\frac{{\\partial f}}{{\\partial z}} = {sp.latex(f_z)}")
-    st.latex(f"\\frac{{\\partial f}}{{\\partial y}} = {sp.latex(f_y)}")
-    st.write(f"f({point_z}, {point_y}) = {f_val}")
-    st.write(f"∂f/∂z({point_z}, {point_y}) = {fz_val}")
-    st.write(f"∂f/∂y({point_z}, {point_y}) = {fy_val}")
+    f_val = f.subs({x: x0, y: y0})
+    fx_val = fx.subs({x: x0, y: y0})
+    fy_val = fy.subs({x: x0, y: y0})
 
-    # Visualisasi grafik
-    st.subheader("Visualisasi Permukaan dan Bidang Singgung")
-    z_vals = np.linspace(point_z - 10, point_z + 10, 50)
-    y_vals = np.linspace(point_y - 10, point_y + 10, 50)
-    Z, Y = np.meshgrid(z_vals, y_vals)
-    f_func = sp.lambdify((z, y), f, 'numpy')
-    F = f_func(Z, Y)
-    tangent = float(f_val) + float(fz_val)(Z - point_z) + float(fy_val)(Y - point_y)
+    st.write("Nilai fungsi di titik (x₀, y₀):", f_val)
+    st.write("Gradien di titik (x₀, y₀):", f"({fx_val}, {fy_val})")
 
-    fig = plt.figure()
+    st.subheader("Grafik Permukaan & Bidang Singgung")
+
+    x_vals = np.linspace(x0 - 2, x0 + 2, 50)
+    y_vals = np.linspace(y0 - 2, y0 + 2, 50)
+    X, Y = np.meshgrid(x_vals, y_vals)
+    Z = sp.lambdify((x, y), f, 'numpy')(X, Y)
+    Z_tangent = float(f_val) + float(fx_val) * (X - x0) + float(fy_val) * (Y - y0)
+
+    fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(Z, Y, F, alpha=0.6, cmap='viridis', label="Permukaan")
-    ax.plot_surface(Z, Y, tangent, alpha=0.5, color='red')
-    ax.scatter(point_z, point_y, float(f_val), color='black', s=50)
-    ax.set_xlabel("z")
-    ax.set_ylabel("y")
-    ax.set_zlabel("f(z, y)")
+    ax.plot_surface(X, Y, Z, alpha=0.7, cmap='viridis')
+    ax.plot_surface(X, Y, Z_tangent, alpha=0.5, color='red')
+    ax.set_title("Permukaan f(x, y) dan bidang singgungnya")
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
     st.pyplot(fig)
 
 except Exception as e:
-    st.error(f"Terjadi kesalahan: {e}")
+    st.error(f"Terjadi kesalahan: {e}")
